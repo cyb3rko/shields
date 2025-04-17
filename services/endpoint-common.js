@@ -35,10 +35,16 @@ const endpointSchema = Joi.object({
   namedLogo: Joi.string(),
   logoSvg: Joi.string(),
   logoColor: optionalStringWhenNamedLogoPresent,
-  logoWidth: optionalNumberWhenAnyLogoPresent,
-  logoPosition: optionalNumberWhenAnyLogoPresent,
+  logoSize: optionalStringWhenNamedLogoPresent,
   style: Joi.string(),
   cacheSeconds: Joi.number().integer().min(0),
+  /*
+  Retained for legacy compatibility
+  Although this does nothing,
+  passing it should not throw an error
+  */
+  logoPosition: optionalNumberWhenAnyLogoPresent,
+  logoWidth: optionalNumberWhenAnyLogoPresent,
 })
   // `namedLogo` or `logoSvg`; not both.
   .oxor('namedLogo', 'logoSvg')

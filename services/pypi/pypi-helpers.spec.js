@@ -35,7 +35,7 @@ const classifiersFixture = {
 }
 
 describe('PyPI helpers', function () {
-  test(parseClassifiers, function () {
+  test(parseClassifiers, () => {
     given(
       classifiersFixture,
       /^Programming Language :: Python :: ([\d.]+)$/,
@@ -60,7 +60,7 @@ describe('PyPI helpers', function () {
     given(classifiersFixture, /^(?!.*)*$/).expect([])
   })
 
-  test(parsePypiVersionString, function () {
+  test(parsePypiVersionString, () => {
     given('1').expect({ major: 1, minor: 0 })
     given('1.0').expect({ major: 1, minor: 0 })
     given('7.2').expect({ major: 7, minor: 2 })
@@ -69,7 +69,7 @@ describe('PyPI helpers', function () {
     given('foo').expect({ major: 0, minor: 0 })
   })
 
-  test(sortPypiVersions, function () {
+  test(sortPypiVersions, () => {
     // Each of these includes a different variant: 2.0, 2, and 2.0rc1.
     given(['2.0', '1.9', '10', '1.11', '2.1', '2.11']).expect([
       '1.9',
@@ -100,19 +100,32 @@ describe('PyPI helpers', function () {
   })
 
   test(getLicenses, () => {
-    forCases([given({ info: { license: 'MIT', classifiers: [] } })]).expect([
-      'MIT',
-    ])
     forCases([
       given({
         info: {
           license: null,
+          license_expression: 'MIT',
+          classifiers: [],
+        },
+      }),
+      given({
+        info: {
+          license: 'MIT',
+          license_expression: null,
+          classifiers: [],
+        },
+      }),
+      given({
+        info: {
+          license: null,
+          license_expression: null,
           classifiers: ['License :: OSI Approved :: MIT License'],
         },
       }),
       given({
         info: {
           license: '',
+          license_expression: null,
           classifiers: ['License :: OSI Approved :: MIT License'],
         },
       }),
@@ -120,12 +133,14 @@ describe('PyPI helpers', function () {
         info: {
           license:
             'this text is really really really really really really long',
+          license_expression: null,
           classifiers: ['License :: OSI Approved :: MIT License'],
         },
       }),
       given({
         info: {
           license: '',
+          license_expression: null,
           classifiers: [
             'License :: OSI Approved :: MIT License',
             'License :: DFSG approved',
@@ -136,24 +151,28 @@ describe('PyPI helpers', function () {
     given({
       info: {
         license: '',
+        license_expression: null,
         classifiers: ['License :: Public Domain'],
       },
     }).expect(['Public Domain'])
     given({
       info: {
         license: '',
+        license_expression: null,
         classifiers: ['License :: Netscape Public License (NPL)'],
       },
     }).expect(['NPL'])
     given({
       info: {
         license: '',
+        license_expression: null,
         classifiers: ['License :: OSI Approved :: Apache Software License'],
       },
     }).expect(['Apache-2.0'])
     given({
       info: {
         license: '',
+        license_expression: null,
         classifiers: [
           'License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication',
         ],
@@ -162,11 +181,19 @@ describe('PyPI helpers', function () {
     given({
       info: {
         license: '',
+        license_expression: null,
         classifiers: [
           'License :: OSI Approved :: GNU Affero General Public License v3',
         ],
       },
     }).expect(['AGPL-3.0'])
+    given({
+      info: {
+        license: '',
+        license_expression: null,
+        classifiers: ['License :: OSI Approved :: Zero-Clause BSD (0BSD)'],
+      },
+    }).expect(['0BSD'])
   })
 
   test(getPackageFormats, () => {

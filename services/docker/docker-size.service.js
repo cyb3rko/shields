@@ -1,9 +1,10 @@
 import Joi from 'joi'
-import prettyBytes from 'pretty-bytes'
+import { renderSizeBadge } from '../size.js'
 import { nonNegativeInteger } from '../validators.js'
 import { latest } from '../version.js'
-import { BaseJsonService, NotFound } from '../index.js'
+import { BaseJsonService, NotFound, pathParams, queryParams } from '../index.js'
 import {
+  archEnum,
   archSchema,
   buildDockerUrl,
   getDockerHubUser,
@@ -38,10 +39,28 @@ const pagedSchema = Joi.object({
   ),
 }).required()
 
+const sortEnum = ['date', 'semver']
+
 const queryParamSchema = Joi.object({
-  sort: Joi.string().valid('date', 'semver').default('date'),
+  sort: Joi.string()
+    .valid(...sortEnum)
+    .default('date'),
   arch: archSchema,
 }).required()
+
+const openApiQueryParams = queryParams(
+  {
+    name: 'sort',
+    example: 'semver',
+    schema: { type: 'string', enum: sortEnum },
+    description: 'If not specified, the default is `date`',
+  },
+  {
+    name: 'arch',
+    example: 'amd64',
+    schema: { type: 'string', enum: archEnum },
+  },
+)
 
 // If user provided the arch parameter,
 // check if any of the returned images has an architecture matching the arch parameter provided.
@@ -73,44 +92,37 @@ export default class DockerSize extends BaseJsonService {
     isRequired: false,
   }
 
-  static examples = [
-    {
-      title: 'Docker Image Size (latest by date)',
-      pattern: ':user/:repo',
-      namedParams: { user: 'fedora', repo: 'apache' },
-      queryParams: { sort: 'date' },
-      staticPreview: this.render({ size: 126000000 }),
+  static openApi = {
+    '/docker/image-size/{user}/{repo}': {
+      get: {
+        summary: 'Docker Image Size',
+        parameters: [
+          ...pathParams(
+            { name: 'user', example: 'fedora' },
+            { name: 'repo', example: 'apache' },
+          ),
+          ...openApiQueryParams,
+        ],
+      },
     },
-    {
-      title: 'Docker Image Size (latest semver)',
-      pattern: ':user/:repo',
-      namedParams: { user: 'fedora', repo: 'apache' },
-      queryParams: { sort: 'semver' },
-      staticPreview: this.render({ size: 136000000 }),
+    '/docker/image-size/{user}/{repo}/{tag}': {
+      get: {
+        summary: 'Docker Image Size (tag)',
+        parameters: [
+          ...pathParams(
+            { name: 'user', example: 'fedora' },
+            { name: 'repo', example: 'apache' },
+            { name: 'tag', example: 'latest' },
+          ),
+          ...openApiQueryParams,
+        ],
+      },
     },
-    {
-      title:
-        'Docker Image Size with architecture (latest by date/latest semver)',
-      pattern: ':user/:repo',
-      namedParams: { user: 'library', repo: 'mysql' },
-      queryParams: { sort: 'date', arch: 'amd64' },
-      staticPreview: this.render({ size: 146000000 }),
-    },
-    {
-      title: 'Docker Image Size (tag)',
-      pattern: ':user/:repo/:tag',
-      namedParams: { user: 'fedora', repo: 'apache', tag: 'latest' },
-      staticPreview: this.render({ size: 103000000 }),
-    },
-  ]
+  }
 
   static _cacheLength = 600
 
   static defaultBadgeData = { label: 'image size', color: 'blue' }
-
-  static render({ size }) {
-    return { message: prettyBytes(size) }
-  }
 
   async fetch({ user, repo, tag, page }) {
     page = page ? `&page=${page}` : ''
@@ -217,6 +229,6 @@ export default class DockerSize extends BaseJsonService {
     }
 
     const { size } = await this.transform({ tag, sort, data, arch })
-    return this.constructor.render({ size })
+    return renderSizeBadge(size, 'iec', 'image size')
   }
 }

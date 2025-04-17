@@ -1,8 +1,24 @@
 # Changelog
 
-## 4.0.0 [WIP]
+## Unreleased
+
+- Switching to using `href`s instead of the old `xlink:href` syntax
+
+## 4.1.0
+
+### Features
+
+- Add `idSuffix` param. This can be used to ensure every element id within the SVG is unique
+
+## 4.0.0
+
+### Breaking Changes
 
 - Drop compatibility with Node < 16
+
+### Features
+
+- Add `links` and `logoBase64` params
 
 ## 3.3.1
 

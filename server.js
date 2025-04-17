@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import configModule from 'config'
-import Sentry from '@sentry/node'
+import * as Sentry from '@sentry/node'
 import Server from './core/server/server.js'
 
 // Set up Sentry reporting as early in the process as possible.
@@ -61,5 +61,10 @@ if (fs.existsSync(legacySecretsPath)) {
   process.exit(1)
 }
 export const server = new Server(config)
+
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down...')
+  await server.stop()
+})
 
 await server.start()

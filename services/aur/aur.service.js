@@ -1,10 +1,8 @@
 import Joi from 'joi'
-import {
-  floorCount as floorCountColor,
-  age as ageColor,
-} from '../color-formatters.js'
+import { renderDateBadge } from '../date.js'
+import { floorCount as floorCountColor } from '../color-formatters.js'
 import { renderLicenseBadge } from '../licenses.js'
-import { addv, metric, formatDate } from '../text-formatters.js'
+import { metric } from '../text-formatters.js'
 import { nonNegativeInteger } from '../validators.js'
 import {
   BaseJsonService,
@@ -12,6 +10,7 @@ import {
   InvalidResponse,
   pathParams,
 } from '../index.js'
+import { renderVersionBadge } from '../version.js'
 
 const aurSchema = Joi.object({
   resultcount: nonNegativeInteger,
@@ -20,6 +19,7 @@ const aurSchema = Joi.object({
       Joi.object({
         License: Joi.array().items(Joi.string().required()).allow(null),
         NumVotes: nonNegativeInteger,
+        Popularity: Joi.number().precision(2).min(0).required(),
         Version: Joi.string().required(),
         OutOfDate: nonNegativeInteger.allow(null),
         Maintainer: Joi.string().required().allow(null),
@@ -118,6 +118,36 @@ class AurVotes extends BaseAurService {
   }
 }
 
+class AurPopularity extends BaseAurService {
+  static category = 'rating'
+
+  static route = { base: 'aur/popularity', pattern: ':packageName' }
+
+  static openApi = {
+    '/aur/popularity/{packageName}': {
+      get: {
+        summary: 'AUR Popularity',
+        description: 'Arch linux User Repository Popularity',
+        parameters: pathParams({ name: 'packageName', example: 'dropbox' }),
+      },
+    },
+  }
+
+  static defaultBadgeData = { label: 'popularity' }
+
+  static render({ popularity }) {
+    return {
+      message: popularity,
+      color: floorCountColor(popularity, 0.5, 2.5, 5),
+    }
+  }
+
+  async handle({ packageName }) {
+    const json = await this.fetch({ packageName })
+    return this.constructor.render({ popularity: json.results[0].Popularity })
+  }
+}
+
 class AurVersion extends BaseAurService {
   static category = 'version'
   static route = { base: 'aur/version', pattern: ':packageName' }
@@ -139,7 +169,7 @@ class AurVersion extends BaseAurService {
 
   static render({ version, outOfDate }) {
     const color = outOfDate === null ? 'blue' : 'orange'
-    return { message: addv(version), color }
+    return renderVersionBadge({ version, versionFormatter: () => color })
   }
 
   async handle({ packageName }) {
@@ -211,17 +241,18 @@ class AurLastModified extends BaseAurService {
 
   static defaultBadgeData = { label: 'last modified' }
 
-  static render({ date }) {
-    const color = ageColor(date)
-    const message = formatDate(date)
-    return { color, message }
-  }
-
   async handle({ packageName }) {
     const json = await this.fetch({ packageName })
     const date = 1000 * parseInt(json.results[0].LastModified)
-    return this.constructor.render({ date })
+    return renderDateBadge(date)
   }
 }
 
-export { AurLicense, AurVersion, AurVotes, AurMaintainer, AurLastModified }
+export {
+  AurLicense,
+  AurVersion,
+  AurVotes,
+  AurPopularity,
+  AurMaintainer,
+  AurLastModified,
+}
