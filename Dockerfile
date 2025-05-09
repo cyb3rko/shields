@@ -1,6 +1,6 @@
-FROM node:20-alpine AS builder
+FROM node:lts-alpine AS builder
 
-RUN npm install -g "npm@^10"
+RUN npm install -g "npm@^11"
 
 RUN mkdir -p /usr/src/app
 RUN mkdir /usr/src/app/private
@@ -20,9 +20,8 @@ RUN npm run build \
     && rm -rf node_modules/.cache \
     && rm -rf frontend package-lock.json
 
-
 # Use multi-stage build to reduce size
-FROM node:20-alpine
+FROM node:lts-alpine
 
 ARG version=dev
 ENV DOCKER_SHIELDS_VERSION=$version

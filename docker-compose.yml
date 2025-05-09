@@ -1,0 +1,7 @@
+name: shields
+
+shields:
+  image: shields
+  container_name: shields
+  ports:
+    - '8080:8080'
